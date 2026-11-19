@@ -11,7 +11,7 @@ const shuffle = (arr, result = []) =>
   arr.length === 0
     ? result
     : use(randomElementIndex(arr), (next) =>
-        shuffle(without(arr, next), [...result, arr[next]])
+        shuffle(without(arr, next), [...result, arr[next]]),
       );
 
 const range = (N, r = []) => (N === 0 ? r : range(N - 1, [...r, r.length]));
@@ -161,22 +161,63 @@ const card = (vnode) => ({
       },
       rect({ x: 0, y: 0, width: size, height: size, fill: `gray` }),
 
-      (vnode.attrs.card || "").split("").map((to, from) => [
-        path({
-          d: `M ${connectors[from].x},${connectors[from].y}
+      (vnode.attrs.card || "").split("").map((to, from) =>
+        use(
+          `M ${connectors[from].x},${connectors[from].y}
               C ${connectors[from].x + connectors[from].cx},${
-            connectors[from].y + connectors[from].cy
-          } 
+                connectors[from].y + connectors[from].cy
+              } 
                 ${connectors[+to + 4].x + connectors[+to + 4].cx},${
-            connectors[+to + 4].y + connectors[+to + 4].cy
-          }
+                  connectors[+to + 4].y + connectors[+to + 4].cy
+                }
                 ${connectors[+to + 4].x},${connectors[+to + 4].y}
              `,
-          "stroke-width": "2px",
-          fill: `none`,
-          stroke: `black`,
-        }),
-      ]),
+          (pd) => [
+            path({
+              d: pd,
+              "stroke-width": "17px",
+              fill: `none`,
+              //              "stroke-dasharray": "5,5",
+              stroke: `black`,
+            }),
+            path({
+              d: pd,
+              "stroke-width": "15px",
+              fill: `none`,
+              //              "stroke-dasharray": "5,5",
+              stroke: `gray`,
+            }),
+            path({
+              d: pd,
+              "stroke-width": "10px",
+              fill: `none`,
+              "stroke-dasharray": "2,3",
+              stroke: `saddlebrown`,
+            }),
+            path({
+              d: pd,
+              "stroke-width": "7px",
+              fill: `none`,
+              //              "stroke-dasharray": "5,5",
+              stroke: `black`,
+            }),
+            path({
+              d: pd,
+              "stroke-width": "6px",
+              fill: `none`,
+              //              "stroke-dasharray": "5,5",
+              stroke: `gray`,
+            }),
+            path({
+              d: pd,
+              "stroke-width": "5px",
+              fill: `none`,
+              "stroke-dasharray": "2,3",
+              stroke: `saddlebrown`,
+            }),
+          ],
+        ),
+      ),
       !showConnectors
         ? null
         : use((vnode.attrs.x + 8 * vnode.attrs.y) * 8, (base) =>
@@ -191,10 +232,10 @@ const card = (vnode) => ({
                     fill: state.path.includes(cnt + base)
                       ? "yellow"
                       : b //&& isStart(c) && !isCenter(vnode.attrs.idx, c)
-                      ? "blue"
-                      : c.next
-                      ? "none"
-                      : "green",
+                        ? "blue"
+                        : c.next
+                          ? "none"
+                          : "green",
                     onmouseover: (e) =>
                       b && isStart(c) && !isCenter(vnode.attrs.idx, c)
                         ? [
@@ -222,7 +263,7 @@ const card = (vnode) => ({
                             fill: "white",
                             style: `font:33px;`,
                           },
-                          cnt + base
+                          cnt + base,
                         ),
                         text(
                           {
@@ -232,7 +273,7 @@ const card = (vnode) => ({
                           },
                           vnode.attrs.x,
                           " ",
-                          vnode.attrs.y
+                          vnode.attrs.y,
                         ),
                         text(
                           {
@@ -240,12 +281,12 @@ const card = (vnode) => ({
                             y: size / 2 + 15,
                             fill: "white",
                           },
-                          (vnode.attrs.x + 8 * vnode.attrs.y) * 8
+                          (vnode.attrs.x + 8 * vnode.attrs.y) * 8,
                         ),
                       ],
-                ]
-              )
-            )
+                ],
+              ),
+            ),
           ),
       text(
         {
@@ -253,8 +294,8 @@ const card = (vnode) => ({
           y: size / 2 + 7,
           fill: "white",
         },
-        ""
-      )
+        "",
+      ),
     ),
 });
 
@@ -277,16 +318,18 @@ state.fields = range(8)
               j,
               cardIdx: cIdx,
               card: state.cards[cIdx],
-            })
+            }),
           )
-        : null
-    )
+        : null,
+    ),
   )
   .filter((e) => !!e);
 
 console.log(state.fields);
 
 const mark = (first) => {
+  console.log("MARK ", first);
+
   state.path.push(first);
 
   const connector = first % 4;
@@ -294,26 +337,33 @@ const mark = (first) => {
   const coordIdx = (first - connector) / 8;
   const cardIdx = use(
     coordIdx,
-    (idx) => (idx < 27 ? 0 : idx < 37 ? -2 : -4) + idx
+    (idx) => (idx < 27 ? 0 : idx < 37 ? -2 : -4) + idx,
   );
 
   const field = state.fields[cardIdx];
 
   if (!field) {
-    console.log("Nö", cardIdx, coordIdx);
+    console.log("Nö", cardIdx, coordIdx, field, first, connector);
     return;
   }
 
-  const nextConnector = +field.card[connector];
-  state.path.push(field.card);
+  const nextConnectorIdx = +field.card[connector];
+//  state.path.push(field.card);
 
   console.log(field);
-  const globalNext = coordIdx * 8 + nextConnector + 4;
+  let globalNext = coordIdx * 8 + nextConnectorIdx + 4;
 
   //  state.path.push(globalNext);
   //  state.path.push(nextConnector);
 
-  if (!isBoundary(field.i, field.j, coordIdx, connectors[nextConnector])) {
+  state.path.push(globalNext);
+
+  const nextConnector = connectors[nextConnectorIdx + 4];
+
+  console.log(nextConnectorIdx, nextConnector);
+
+  if (!isBoundary(field.i, field.j, coordIdx, connectors[nextConnectorIdx+4])) {
+    globalNext += nextConnector.next;
     mark(globalNext);
   }
 };
@@ -327,7 +377,7 @@ m.mount(document.body, {
       },
       text(
         { x: innerWidth / 2 - 100, y: innerHeight / 2, fill: "white" },
-        JSON.stringify(state.path)
+        JSON.stringify(state.path),
       ),
       state.fields.map((c) =>
         m(card, {
@@ -335,8 +385,8 @@ m.mount(document.body, {
           y: c.j,
           idx: c.cardIdx,
           card: c.card,
-        })
-      )
+        }),
+      ),
     ),
   ],
 });
