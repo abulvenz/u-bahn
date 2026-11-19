@@ -1,0 +1,1 @@
+{"mappings":"ACAA","sources":["u-bahn.ee7516c3.css","style.css"],"sourcesContent":["body {\n  color: #f4a460;\n  background-color: #000;\n  margin: 0;\n  padding: 0;\n}\n/*# sourceMappingURL=u-bahn.ee7516c3.css.map */\n","body {\n  background-color: black;\n  color: sandybrown;\n  margin: 0;\n  padding: 0;\n}\n"],"names":[],"version":3,"file":"u-bahn.ee7516c3.css.map"}

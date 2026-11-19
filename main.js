@@ -1,8 +1,8 @@
 import m from "mithril";
-import tagl, { s } from "tagl-mithril";
+import tagl, { filter, s } from "tagl-mithril";
 
 const { div, svg, g, path, rect, text, circle } = tagl(m);
-const { trunc, random } = Math;
+const { trunc, random, min } = Math;
 
 const randomElementIndex = (arr) => trunc(random() * arr.length);
 const without = (arr, idx) => arr.filter((e, i) => i !== idx);
@@ -16,17 +16,16 @@ const shuffle = (arr, result = []) =>
 
 const range = (N, r = []) => (N === 0 ? r : range(N - 1, [...r, r.length]));
 const use = (v, f) => f(v);
-const size = innerWidth / 10;
+const size = min(innerWidth / 9, innerHeight / 9);
 
-const circleSize = size / 20;
+const circleSize = size / 30;
 
 const controlSize = size / 4;
-const gap = 12;
+const gap = 2;
 
 const showConnectors = true;
 const showControl = false;
 const showNumbers = false;
-
 const cards = [
   { g: "0123", count: 2 },
   { g: "0132", count: 2 },
@@ -189,14 +188,20 @@ const card = (vnode) => ({
                     cx: c.x,
                     cy: c.y,
                     r: circleSize,
-                    fill: b //&& isStart(c) && !isCenter(vnode.attrs.idx, c)
+                    fill: state.path.includes(cnt + base)
+                      ? "yellow"
+                      : b //&& isStart(c) && !isCenter(vnode.attrs.idx, c)
                       ? "blue"
                       : c.next
-                      ? "red"
+                      ? "none"
                       : "green",
                     onmouseover: (e) =>
                       b && isStart(c) && !isCenter(vnode.attrs.idx, c)
-                        ? (state.selected = cnt + base)
+                        ? [
+                            (state.selected = cnt + base),
+                            (state.path = []),
+                            mark(state.selected),
+                          ]
                         : null,
                   }),
                   !showControl
@@ -248,7 +253,7 @@ const card = (vnode) => ({
           y: size / 2 + 7,
           fill: "white",
         },
-        "×"
+        ""
       )
     ),
 });
@@ -281,9 +286,40 @@ state.fields = range(8)
 
 console.log(state.fields);
 
+const mark = (first) => {
+  state.path.push(first);
+
+  const connector = first % 4;
+  //state.path.push(connector);
+  const coordIdx = (first - connector) / 8;
+  const cardIdx = use(
+    coordIdx,
+    (idx) => (idx < 27 ? 0 : idx < 37 ? -2 : -4) + idx
+  );
+
+  const field = state.fields[cardIdx];
+
+  if (!field) {
+    console.log("Nö", cardIdx, coordIdx);
+    return;
+  }
+
+  const nextConnector = +field.card[connector];
+  state.path.push(field.card);
+
+  console.log(field);
+  const globalNext = coordIdx * 8 + nextConnector + 4;
+
+  //  state.path.push(globalNext);
+  //  state.path.push(nextConnector);
+
+  if (!isBoundary(field.i, field.j, coordIdx, connectors[nextConnector])) {
+    mark(globalNext);
+  }
+};
+
 m.mount(document.body, {
   view: (vnode) => [
-    div("Water "),
     svg(
       {
         width: innerWidth,
@@ -291,7 +327,7 @@ m.mount(document.body, {
       },
       text(
         { x: innerWidth / 2 - 100, y: innerHeight / 2, fill: "white" },
-        JSON.stringify(state.selected)
+        JSON.stringify(state.path)
       ),
       state.fields.map((c) =>
         m(card, {
